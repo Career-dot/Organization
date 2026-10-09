@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d/AI-Skill-Verification-Platform/backend/**)",
+      "Bash(node _tmp_phase6e_test.js)"
+    ]
+  }
+}

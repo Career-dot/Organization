@@ -1,0 +1,283 @@
+{
+  "meta": {
+    "generatedAt": "2026-09-14T17:55:26.373Z",
+    "script": "backend/scripts/auditAccountState.js",
+    "mode": "READ-ONLY (findMany/findFirst only)",
+    "policy": {
+      "validCombinations": [
+        "Candidate only",
+        "Recruiter only",
+        "Org Admin only",
+        "Org Recruiter only",
+        "Candidate + Recruiter",
+        "Candidate + Org Admin",
+        "Candidate + Org Recruiter"
+      ],
+      "invalidCombinations": [
+        "Recruiter + Org Admin",
+        "Candidate + Recruiter + Org Admin",
+        "Any combination containing both Recruiter and Org Admin"
+      ],
+      "existenceRules": {
+        "candidate": "UserRole EMPLOYEE exists",
+        "recruiter": "UserRole RECRUITER exists",
+        "orgAdmin": "UserRole ORG_ADMIN exists AND (owns an Organization OR holds a non-REMOVED ORG_ADMIN membership)",
+        "orgRecruiter": "ACTIVE OrganizationMembership with role RECRUITER"
+      },
+      "existenceNeverUsesSubscriptions": true
+    }
+  },
+  "summary": {
+    "totalUsers": 3,
+    "nonSuperAdminUsers": 2,
+    "deletedUsers": 0,
+    "superAdmins": 1,
+    "combinationCounts": {
+      "Candidate + Recruiter": 1,
+      "Recruiter only": 1
+    },
+    "invalidCombinationUsers": 0,
+    "profileInconsistencyFlags": 0,
+    "membershipInconsistencyFlags": 0,
+    "subscriptionInconsistencies": 0,
+    "usersWithAnyFlag": 0
+  },
+  "flagCounts": {
+    "byCategory": {},
+    "byCode": {}
+  },
+  "subscriptionIssues": [],
+  "superAdminSanity": [
+    {
+      "email": "areebadastageer@gmail.com",
+      "roles": [
+        "SUPER_ADMIN"
+      ],
+      "anomaly": false
+    }
+  ],
+  "users": [
+    {
+      "user": {
+        "id": "cmtsobvl30000u2cwvkoeclgs",
+        "email": "areebadastageer@gmail.com",
+        "status": "ACTIVE",
+        "emailVerified": true,
+        "isDeleted": false,
+        "mustChangePassword": false
+      },
+      "isSuperAdmin": true,
+      "persisted": {
+        "globalRoles": [
+          "SUPER_ADMIN"
+        ],
+        "hasOrgAdminRole": false,
+        "employeeProfileExists": false,
+        "recruiterProfileExists": false,
+        "ownedOrganizations": [],
+        "memberships": []
+      },
+      "exists": {
+        "candidate": false,
+        "recruiter": false,
+        "orgAdmin": false,
+        "orgRecruiter": false
+      },
+      "usable": {
+        "candidate": false,
+        "recruiter": false,
+        "orgAdmin": false,
+        "orgRecruiter": false
+      },
+      "usableAccounts": [],
+      "profileAccounts": [],
+      "defaultRole": null,
+      "defaultOnboarding": null,
+      "onboardingByRole": {},
+      "combination": {
+        "label": "NO_ACCOUNT",
+        "valid": false,
+        "reason": "No global roles and no ACTIVE organization-recruiter membership"
+      },
+      "flags": [
+        {
+          "category": "ROLE_COMBINATION",
+          "code": "INVALID_COMBINATION",
+          "detail": "NO_ACCOUNT — No global roles and no ACTIVE organization-recruiter membership"
+        }
+      ],
+      "subscriptions": {
+        "personal": [],
+        "organization": []
+      }
+    },
+    {
+      "user": {
+        "id": "cmtv8ef7n000au2hkyokctwaa",
+        "email": "areebadastageer924@gmail.com",
+        "status": "PENDING_PROFILE",
+        "emailVerified": true,
+        "isDeleted": false,
+        "mustChangePassword": false
+      },
+      "isSuperAdmin": false,
+      "persisted": {
+        "globalRoles": [
+          "EMPLOYEE",
+          "RECRUITER"
+        ],
+        "hasOrgAdminRole": false,
+        "employeeProfileExists": true,
+        "recruiterProfileExists": true,
+        "ownedOrganizations": [],
+        "memberships": []
+      },
+      "exists": {
+        "candidate": true,
+        "recruiter": true,
+        "orgAdmin": false,
+        "orgRecruiter": false
+      },
+      "usable": {
+        "candidate": true,
+        "recruiter": true,
+        "orgAdmin": false,
+        "orgRecruiter": false
+      },
+      "usableAccounts": [
+        {
+          "role": "EMPLOYEE",
+          "scope": "user",
+          "organizationId": null
+        },
+        {
+          "role": "RECRUITER",
+          "scope": "user",
+          "organizationId": null
+        }
+      ],
+      "profileAccounts": [
+        "EMPLOYEE",
+        "RECRUITER"
+      ],
+      "defaultRole": "EMPLOYEE",
+      "defaultOnboarding": {
+        "hasActiveSubscription": true,
+        "nextStep": "EMPLOYEE_DASHBOARD",
+        "profileComplete": true,
+        "missingFields": []
+      },
+      "onboardingByRole": {
+        "EMPLOYEE": {
+          "hasActiveSubscription": true,
+          "nextStep": "EMPLOYEE_DASHBOARD",
+          "profileComplete": true,
+          "missingFields": []
+        },
+        "RECRUITER": {
+          "hasActiveSubscription": true,
+          "nextStep": "DASHBOARD",
+          "profileComplete": true
+        }
+      },
+      "combination": {
+        "label": "Candidate + Recruiter",
+        "valid": true
+      },
+      "flags": [],
+      "subscriptions": {
+        "personal": [
+          {
+            "id": "cmtzs1fe7001xu250lb7b69nv",
+            "ownerType": "user",
+            "ownerId": "cmtv8ef7n000au2hkyokctwaa",
+            "plan": "Recruiter Pro",
+            "planType": "RECRUITER",
+            "status": "ACTIVE",
+            "startDate": "2026-09-13T12:15:09.844Z",
+            "expiryDate": "2026-10-13T12:15:09.844Z",
+            "usable": true
+          }
+        ],
+        "organization": []
+      }
+    },
+    {
+      "user": {
+        "id": "cmu0r6kpc0006u2bwzm006mh7",
+        "email": "biyamughal2006@gmail.com",
+        "status": "PENDING_PROFILE",
+        "emailVerified": true,
+        "isDeleted": false,
+        "mustChangePassword": false
+      },
+      "isSuperAdmin": false,
+      "persisted": {
+        "globalRoles": [
+          "RECRUITER"
+        ],
+        "hasOrgAdminRole": false,
+        "employeeProfileExists": false,
+        "recruiterProfileExists": true,
+        "ownedOrganizations": [],
+        "memberships": []
+      },
+      "exists": {
+        "candidate": false,
+        "recruiter": true,
+        "orgAdmin": false,
+        "orgRecruiter": false
+      },
+      "usable": {
+        "candidate": false,
+        "recruiter": true,
+        "orgAdmin": false,
+        "orgRecruiter": false
+      },
+      "usableAccounts": [
+        {
+          "role": "RECRUITER",
+          "scope": "user",
+          "organizationId": null
+        }
+      ],
+      "profileAccounts": [
+        "RECRUITER"
+      ],
+      "defaultRole": "RECRUITER",
+      "defaultOnboarding": {
+        "hasActiveSubscription": true,
+        "nextStep": "DASHBOARD",
+        "profileComplete": true
+      },
+      "onboardingByRole": {
+        "RECRUITER": {
+          "hasActiveSubscription": true,
+          "nextStep": "DASHBOARD",
+          "profileComplete": true
+        }
+      },
+      "combination": {
+        "label": "Recruiter only",
+        "valid": true
+      },
+      "flags": [],
+      "subscriptions": {
+        "personal": [
+          {
+            "id": "cmu0r7hz8000ju2bwasnwn5v1",
+            "ownerType": "user",
+            "ownerId": "cmu0r6kpc0006u2bwzm006mh7",
+            "plan": "Recruiter Pro",
+            "planType": "RECRUITER",
+            "status": "ACTIVE",
+            "startDate": "2026-09-14T04:39:39.709Z",
+            "expiryDate": "2026-10-14T04:39:39.709Z",
+            "usable": true
+          }
+        ],
+        "organization": []
+      }
+    }
+  ]
+}

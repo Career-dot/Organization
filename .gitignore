@@ -1,0 +1,43 @@
+# Runtime uploads and generated storage
+backend/storage/*
+!backend/storage/.gitkeep
+!backend/storage/README.md
+backend/storage/**/*
+!backend/storage/**/.gitkeep
+!backend/storage/**/README.md
+
+# Node modules and lockfiles already tracked by package manager
+node_modules/
+.DS_Store
+# Environment files and secrets
+
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Dependencies and Python environments
+
+**/node_modules/
+.venv/
+venv/
+**/__pycache__/
+
+# Build output
+
+dist/
+build/
+coverage/
+
+# Logs and local files
+
+*.log
+logs/
+redis-binaries/
+*.zip
+*.backup
+*.bak
+*.tmp
+.DS_Store
+Thumbs.db
+

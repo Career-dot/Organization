@@ -1,0 +1,32 @@
+
+DATABASE_URL="postgresql://postgres:1234@localhost:5433/ai_skill_platform?schema=public"
+PORT=5000
+JWT_SECRET=<redacted len=130>
+JWT_EXPIRES_IN="15m"
+REFRESH_TOKEN_EXPIRES_IN=<redacted len=4>
+REFRESH_TOKEN_SECRET=<redacted len=130>
+NODE_ENV="development"
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT=587
+SMTP_USER=<redacted len=27>
+SMTP_PASSWORD=<redacted len=21>
+EMAIL_FROM=<redacted len=27>
+FRONTEND_URL="http://localhost:5173"
+SUPER_ADMIN_BOOTSTRAP_EMAIL=areebadastageer@gmail.com
+SUPER_ADMIN_BOOTSTRAP_PASSWORD=<redacted len=11>
+GEMINI_API_KEY=<redacted len=53>
+# --- Stage 2: AI delivery layer (Redis/BullMQ) ---
+# Redis/BullMQ is the delivery transport ONLY; the PostgreSQL AiJob row remains
+# the source of truth. No credentials here: localhost development values.
+REDIS_URL=redis://localhost:6379
+AI_QUEUE_CONCURRENCY=2
+AI_JOB_MAX_ATTEMPTS=3
+AI_RETRY_BASE_DELAY_MS=1000
+AI_RETRY_MAX_DELAY_MS=30000
+AI_REQUEST_TIMEOUT_MS=30000
+# Stale PROCESSING recovery (opt-in; leave false until Stage 3 can write terminal states)
+AI_STALE_SWEEP_ENABLED=false
+AI_STALE_PROCESSING_MS=300000
+AI_STALE_SWEEP_INTERVAL_MS=60000
+AI_SERVICE_URL=http://localhost:8000
+AI_SERVICE_API_KEY=<redacted len=32>

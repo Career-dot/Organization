@@ -1,0 +1,168 @@
+-- CreateEnum
+CREATE TYPE "ExperienceLevel" AS ENUM (
+    'ENTRY_LEVEL',
+    'MID_LEVEL',
+    'SENIOR_LEVEL',
+    'LEAD',
+    'EXECUTIVE'
+);
+
+-- AlterTable
+ALTER TABLE "EmployeeProfile"
+ADD COLUMN "profileData" JSONB,
+ADD COLUMN "profileCompletedAt" TIMESTAMP(3),
+ADD COLUMN "experienceLevel" "ExperienceLevel";
+
+-- CreateTable
+CREATE TABLE "EmployeeProfileEducation" (
+    "id" TEXT NOT NULL,
+    "employeeProfileId" TEXT NOT NULL,
+    "school" TEXT NOT NULL,
+    "degree" TEXT,
+    "fieldOfStudy" TEXT,
+    "startDate" TIMESTAMP(3),
+    "endDate" TIMESTAMP(3),
+    "isCurrent" BOOLEAN NOT NULL DEFAULT false,
+    "grade" TEXT,
+    "description" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmployeeProfileEducation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmployeeProfileSkill" (
+    "id" TEXT NOT NULL,
+    "employeeProfileId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "category" TEXT,
+    "proficiency" TEXT,
+    "yearsOfExperience" INTEGER,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmployeeProfileSkill_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmployeeProfileProject" (
+    "id" TEXT NOT NULL,
+    "employeeProfileId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "role" TEXT,
+    "link" TEXT,
+    "startDate" TIMESTAMP(3),
+    "endDate" TIMESTAMP(3),
+    "isOngoing" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmployeeProfileProject_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmployeeProfileProjectSkill" (
+    "id" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "skillId" TEXT,
+    "customSkillName" TEXT,
+    "proficiency" TEXT,
+    "yearsOfExperience" INTEGER,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmployeeProfileProjectSkill_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmployeeProfileCertificate" (
+    "id" TEXT NOT NULL,
+    "employeeProfileId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "issuer" TEXT,
+    "issueDate" TIMESTAMP(3),
+    "expiryDate" TIMESTAMP(3),
+    "credentialId" TEXT,
+    "credentialUrl" TEXT,
+    "description" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmployeeProfileCertificate_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE INDEX "EmployeeProfileEducation_employeeProfileId_idx"
+ON "EmployeeProfileEducation"("employeeProfileId");
+
+CREATE INDEX "EmployeeProfileEducation_school_idx"
+ON "EmployeeProfileEducation"("school");
+
+CREATE INDEX "EmployeeProfileSkill_employeeProfileId_idx"
+ON "EmployeeProfileSkill"("employeeProfileId");
+
+CREATE INDEX "EmployeeProfileSkill_name_idx"
+ON "EmployeeProfileSkill"("name");
+
+CREATE INDEX "EmployeeProfileProject_employeeProfileId_idx"
+ON "EmployeeProfileProject"("employeeProfileId");
+
+CREATE INDEX "EmployeeProfileProject_name_idx"
+ON "EmployeeProfileProject"("name");
+
+CREATE INDEX "EmployeeProfileProjectSkill_projectId_idx"
+ON "EmployeeProfileProjectSkill"("projectId");
+
+CREATE INDEX "EmployeeProfileProjectSkill_skillId_idx"
+ON "EmployeeProfileProjectSkill"("skillId");
+
+CREATE INDEX "EmployeeProfileCertificate_employeeProfileId_idx"
+ON "EmployeeProfileCertificate"("employeeProfileId");
+
+CREATE INDEX "EmployeeProfileCertificate_name_idx"
+ON "EmployeeProfileCertificate"("name");
+
+-- AddForeignKey
+ALTER TABLE "EmployeeProfileEducation"
+ADD CONSTRAINT "EmployeeProfileEducation_employeeProfileId_fkey"
+FOREIGN KEY ("employeeProfileId")
+REFERENCES "EmployeeProfile"("id")
+ON DELETE CASCADE
+ON UPDATE CASCADE;
+
+ALTER TABLE "EmployeeProfileSkill"
+ADD CONSTRAINT "EmployeeProfileSkill_employeeProfileId_fkey"
+FOREIGN KEY ("employeeProfileId")
+REFERENCES "EmployeeProfile"("id")
+ON DELETE CASCADE
+ON UPDATE CASCADE;
+
+ALTER TABLE "EmployeeProfileProject"
+ADD CONSTRAINT "EmployeeProfileProject_employeeProfileId_fkey"
+FOREIGN KEY ("employeeProfileId")
+REFERENCES "EmployeeProfile"("id")
+ON DELETE CASCADE
+ON UPDATE CASCADE;
+
+ALTER TABLE "EmployeeProfileProjectSkill"
+ADD CONSTRAINT "EmployeeProfileProjectSkill_projectId_fkey"
+FOREIGN KEY ("projectId")
+REFERENCES "EmployeeProfileProject"("id")
+ON DELETE CASCADE
+ON UPDATE CASCADE;
+
+ALTER TABLE "EmployeeProfileProjectSkill"
+ADD CONSTRAINT "EmployeeProfileProjectSkill_skillId_fkey"
+FOREIGN KEY ("skillId")
+REFERENCES "EmployeeProfileSkill"("id")
+ON DELETE SET NULL
+ON UPDATE CASCADE;
+
+ALTER TABLE "EmployeeProfileCertificate"
+ADD CONSTRAINT "EmployeeProfileCertificate_employeeProfileId_fkey"
+FOREIGN KEY ("employeeProfileId")
+REFERENCES "EmployeeProfile"("id")
+ON DELETE CASCADE
+ON UPDATE CASCADE;

@@ -1,0 +1,1391 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique
+  passwordHash            String?
+  fullName                String
+  profileImage            String?
+  phone                   String?
+  country                 String?
+  city                    String?
+  provider                AuthProvider             @default(LOCAL)
+  emailVerified           Boolean                  @default(false)
+  status                  UserStatus               @default(PENDING_EMAIL_VERIFICATION)
+  isDeleted               Boolean                  @default(false)
+  loginAttempts           Int                      @default(0)
+  lockedUntil             DateTime?
+  lastPasswordChanged     DateTime?
+  twoFactorEnabled        Boolean                  @default(false)
+  lastLogin               DateTime?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  mustChangePassword      Boolean                  @default(false)
+  auditLogs               AuditLog[]
+  emailVerificationTokens EmailVerificationToken[]
+  employeeProfile         EmployeeProfile?
+  jobsCreated             Job[]                    @relation("JobsCreatedByUser")
+  jobsPostedAsRecruiter   Job[]                    @relation("JobsPostedByRecruiter")
+  loginSessions           LoginSession[]
+  notifications           Notification[]
+  organizations           Organization[]           @relation("OrganizationOwner")
+  organizationMemberships OrganizationMembership[]
+  passwordHistories       PasswordHistory[]
+  passwordResetTokens     PasswordResetToken[]
+  recruiterProfile        RecruiterProfile?
+  refreshTokens           RefreshToken[]
+  subscriptions           Subscription[]
+  roles                   UserRole[]
+  verificationAttempts    VerificationAttempt[]
+}
+
+model Role {
+  id          String     @id @default(cuid())
+  name        RoleName   @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  users       UserRole[]
+}
+
+model UserRole {
+  id         String   @id @default(cuid())
+  userId     String
+  roleId     String
+  assignedAt DateTime @default(now())
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+}
+
+model EmployeeProfile {
+  id                   String                        @id @default(cuid())
+  userId               String                        @unique
+  headline             String?
+  bio                  String?
+  availability         AvailabilityStatus            @default(ACTIVELY_LOOKING)
+  createdAt            DateTime                      @default(now())
+  updatedAt            DateTime                      @updatedAt
+  experienceLevel      ExperienceLevel?
+  profileCompletedAt   DateTime?
+  profileData          Json?
+  preferredCareerRoles EmployeePreferredCareerRole[]
+  user                 User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  certificates         EmployeeProfileCertificate[]
+  education            EmployeeProfileEducation[]
+  projects             EmployeeProfileProject[]
+  skills               EmployeeProfileSkill[]
+  files                StoredFile[]
+  verificationAttempts VerificationAttempt[]
+}
+
+model EmployeeProfileEducation {
+  id                String          @id @default(cuid())
+  employeeProfileId String
+  school            String
+  degree            String?
+  fieldOfStudy      String?
+  startDate         DateTime?
+  endDate           DateTime?
+  isCurrent         Boolean         @default(false)
+  grade             String?
+  description       String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  marksOrCgpa       String?
+  employeeProfile   EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+
+  @@index([employeeProfileId])
+  @@index([school])
+}
+
+model EmployeeProfileSkill {
+  id                    String                        @id @default(cuid())
+  employeeProfileId     String
+  name                  String
+  yearsOfExperience     Int?
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
+  proficiency           SkillProficiency?
+  category              String?
+  canonicalSkillId      String?
+  assessmentDefinitions AssessmentDefinition[]
+  certificates          EmployeeProfileCertificate[]
+  projectSkills         EmployeeProfileProjectSkill[]
+  canonicalSkill        SkillCatalog?                 @relation(fields: [canonicalSkillId], references: [id])
+  employeeProfile       EmployeeProfile               @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+  files                 StoredFile[]
+  verificationAttempts  VerificationAttempt[]
+  verificationReports   VerificationReport[]
+
+  @@index([employeeProfileId])
+  @@index([name])
+  @@index([canonicalSkillId])
+}
+
+model EmployeeProfileProject {
+  id                String                        @id @default(cuid())
+  employeeProfileId String
+  name              String
+  description       String?
+  role              String?
+  startDate         DateTime?
+  endDate           DateTime?
+  isOngoing         Boolean                       @default(false)
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
+  link              String?
+  employeeProfile   EmployeeProfile               @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+  projectSkills     EmployeeProfileProjectSkill[]
+  storedFiles       StoredFile[]
+
+  @@index([employeeProfileId])
+  @@index([name])
+}
+
+model EmployeeProfileProjectSkill {
+  id                String                 @id @default(cuid())
+  projectId         String
+  skillId           String?
+  customSkillName   String?
+  yearsOfExperience Int?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  proficiency       SkillProficiency?
+  project           EmployeeProfileProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  skill             EmployeeProfileSkill?  @relation(fields: [skillId], references: [id])
+
+  @@index([projectId])
+  @@index([skillId])
+}
+
+model EmployeeProfileCertificate {
+  id                String                @id @default(cuid())
+  employeeProfileId String
+  name              String
+  issuer            String?
+  issueDate         DateTime?
+  expiryDate        DateTime?
+  credentialId      String?
+  credentialUrl     String?
+  description       String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  skillId           String?
+  employeeProfile   EmployeeProfile       @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+  skill             EmployeeProfileSkill? @relation(fields: [skillId], references: [id])
+  files             StoredFile[]
+
+  @@index([employeeProfileId])
+  @@index([skillId])
+  @@index([name])
+}
+
+model AssessmentDefinition {
+  id                         String                     @id @default(cuid())
+  employeeProfileSkillId     String
+  skillNameSnapshot          String
+  skillCategorySnapshot      String?
+  claimedProficiencySnapshot SkillProficiency?
+  yearsOfExperienceSnapshot  Int?
+  department                 String?
+  domain                     String?
+  title                      String
+  description                String?
+  durationSeconds            Int
+  questionCount              Int
+  passingScore               Int
+  difficultyConfiguration    Json?
+  generationModel            String?
+  promptVersion              String?
+  status                     AssessmentDefinitionStatus @default(DRAFT)
+  version                    Int
+  createdAt                  DateTime                   @default(now())
+  updatedAt                  DateTime                   @updatedAt
+  publishedAt                DateTime?
+  employeeProfileSkill       EmployeeProfileSkill       @relation(fields: [employeeProfileSkillId], references: [id], onDelete: Cascade)
+  questions                  AssessmentQuestion[]
+  verificationAttempts       VerificationAttempt[]
+
+  @@unique([employeeProfileSkillId, version])
+  @@index([employeeProfileSkillId, status])
+  @@index([domain, department])
+}
+
+model AssessmentQuestion {
+  id                      String                 @id @default(cuid())
+  assessmentDefinitionId  String
+  questionOrder           Int
+  questionType            AssessmentQuestionType
+  prompt                  String
+  points                  Int
+  difficulty              AssessmentDifficulty?
+  questionConfiguration   Json?
+  options                 Json?
+  evaluationConfiguration Json?
+  rubric                  Json?
+  correctAnswer           Json?
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  answers                 AssessmentAnswer[]
+  assessmentDefinition    AssessmentDefinition   @relation(fields: [assessmentDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentDefinitionId, questionOrder])
+  @@index([assessmentDefinitionId, questionType])
+}
+
+model SkillCatalog {
+  id                    String                 @id @default(cuid())
+  name                  String
+  nameNormalized        String                 @unique
+  slug                  String                 @unique
+  category              String?
+  isActive              Boolean                @default(true)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  careerRoleSkills      CareerRoleSkill[]
+  employeeProfileSkills EmployeeProfileSkill[]
+  aliases               SkillAlias[]
+
+  @@index([isActive])
+  @@index([category])
+}
+
+model SkillAlias {
+  id              String       @id @default(cuid())
+  skillId         String
+  alias           String
+  aliasNormalized String       @unique
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  skill           SkillCatalog @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@index([skillId])
+}
+
+model CareerRole {
+  id                     String                        @id @default(cuid())
+  name                   String
+  nameNormalized         String                        @unique
+  slug                   String                        @unique
+  description            String?
+  isActive               Boolean                       @default(true)
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
+  aliases                CareerRoleAlias[]
+  requiredSkills         CareerRoleSkill[]
+  employeePreferredRoles EmployeePreferredCareerRole[]
+
+  @@index([isActive])
+}
+
+model CareerRoleAlias {
+  id              String     @id @default(cuid())
+  careerRoleId    String
+  alias           String
+  aliasNormalized String     @unique
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  careerRole      CareerRole @relation(fields: [careerRoleId], references: [id], onDelete: Cascade)
+
+  @@index([careerRoleId])
+}
+
+model CareerRoleSkill {
+  id           String       @id @default(cuid())
+  careerRoleId String
+  skillId      String
+  createdAt    DateTime     @default(now())
+  careerRole   CareerRole   @relation(fields: [careerRoleId], references: [id], onDelete: Cascade)
+  skill        SkillCatalog @relation(fields: [skillId], references: [id])
+
+  @@unique([careerRoleId, skillId])
+  @@index([skillId])
+}
+
+model EmployeePreferredCareerRole {
+  id                   String              @id @default(cuid())
+  employeeProfileId    String
+  careerRoleId         String?
+  sourceText           String
+  sourceTextNormalized String
+  mappingStatus        CareerMappingStatus @default(UNMAPPED)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  careerRole           CareerRole?         @relation(fields: [careerRoleId], references: [id])
+  employeeProfile      EmployeeProfile     @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeProfileId, sourceTextNormalized])
+  @@index([employeeProfileId, mappingStatus])
+  @@index([careerRoleId])
+}
+
+model VerificationAttempt {
+  id                         String                    @id @default(cuid())
+  userId                     String
+  employeeProfileId          String
+  employeeProfileSkillId     String
+  assessmentDefinitionId     String
+  assessmentVersion          Int
+  skillNameSnapshot          String
+  claimedProficiencySnapshot SkillProficiency?
+  yearsOfExperienceSnapshot  Int?
+  status                     VerificationAttemptStatus @default(IN_PROGRESS)
+  startedAt                  DateTime                  @default(now())
+  deadlineAt                 DateTime
+  submittedAt                DateTime?
+  expiredAt                  DateTime?
+  testScorePoints            Int?
+  testScoreMaxPoints         Int?
+  testScorePercentage        Decimal?
+  createdAt                  DateTime                  @default(now())
+  updatedAt                  DateTime                  @updatedAt
+  violationCount             Int                       @default(0)
+  answers                    AssessmentAnswer[]
+  assessmentDefinition       AssessmentDefinition      @relation(fields: [assessmentDefinitionId], references: [id])
+  employeeProfile            EmployeeProfile           @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+  employeeProfileSkill       EmployeeProfileSkill      @relation(fields: [employeeProfileSkillId], references: [id], onDelete: Cascade)
+  user                       User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verificationReport         VerificationReport?
+
+  @@index([userId, status])
+  @@index([employeeProfileId, employeeProfileSkillId, createdAt])
+  @@index([assessmentDefinitionId, assessmentVersion])
+}
+
+model AssessmentAnswer {
+  id                 String              @id @default(cuid())
+  attemptId          String
+  questionId         String
+  answerData         Json?
+  answeredAt         DateTime?
+  evaluationStatus   EvaluationStatus    @default(PENDING)
+  isCorrect          Boolean?
+  pointsAwarded      Int?
+  evaluationMetadata Json?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  attempt            VerificationAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question           AssessmentQuestion  @relation(fields: [questionId], references: [id])
+
+  @@unique([attemptId, questionId])
+  @@index([questionId])
+}
+
+model VerificationReport {
+  id                     String                       @id @default(cuid())
+  verificationAttemptId  String                       @unique
+  employeeProfileSkillId String
+  processingStatus       VerificationProcessingStatus @default(NOT_STARTED)
+  verificationStatus     VerificationStatus           @default(PENDING)
+  verificationScore      Decimal?
+  confidenceScore        Decimal?
+  aiSummary              String?
+  strengths              Json?
+  areasToImprove         Json?
+  testPerformance        Json?
+  aiModel                String?
+  promptVersion          String?
+  reportVersion          Int                          @default(1)
+  createdAt              DateTime                     @default(now())
+  completedAt            DateTime?
+  updatedAt              DateTime                     @updatedAt
+  evidence               VerificationEvidence[]
+  employeeProfileSkill   EmployeeProfileSkill         @relation(fields: [employeeProfileSkillId], references: [id], onDelete: Cascade)
+  verificationAttempt    VerificationAttempt          @relation(fields: [verificationAttemptId], references: [id], onDelete: Cascade)
+
+  @@index([employeeProfileSkillId, createdAt])
+  @@index([processingStatus, createdAt])
+}
+
+model VerificationEvidence {
+  id                   String                   @id @default(cuid())
+  verificationReportId String
+  evidenceType         VerificationEvidenceType
+  sourceId             String?
+  sourceVersion        String?
+  contentHash          String?
+  snapshot             Json
+  analysisSummary      String?
+  relevance            Decimal?
+  createdAt            DateTime                 @default(now())
+  verificationReport   VerificationReport       @relation(fields: [verificationReportId], references: [id], onDelete: Cascade)
+
+  @@index([verificationReportId, evidenceType])
+  @@index([evidenceType, sourceId])
+  @@index([contentHash])
+}
+
+model RecruiterProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  companyName     String?
+  jobTitle        String?
+  businessEmail   String?
+  linkedInUrl     String?
+  companyWebsite  String?
+  isVerified      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  bio             String?
+  businessPhone   String?
+  displayName     String?
+  location        String?
+  specialties     String?
+  yearsExperience Int?
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Organization {
+  id            String                   @id @default(cuid())
+  name          String
+  ownerId       String
+  website       String?
+  businessEmail String?
+  status        OrganizationStatus       @default(PENDING_VERIFICATION)
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  jobs          Job[]                    @relation("OrganizationJobs")
+  owner         User                     @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  memberships   OrganizationMembership[]
+  subscriptions Subscription[]
+}
+
+model OrganizationMembership {
+  id             String           @id @default(cuid())
+  userId         String
+  organizationId String
+  role           RoleName
+  createdAt      DateTime         @default(now())
+  status         MembershipStatus @default(INVITED)
+  permissions    String[]         @default([])
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+model RefreshToken {
+  id             String        @id @default(cuid())
+  tokenHash      String        @unique
+  userId         String
+  expiresAt      DateTime
+  revoked        Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  loginSessionId String?
+  usedAt         DateTime?
+  revokedAt      DateTime?
+  replacedById   String?       @unique
+  loginSession   LoginSession? @relation(fields: [loginSessionId], references: [id], onDelete: Cascade)
+  replacedBy     RefreshToken? @relation("RefreshTokenRotation", fields: [replacedById], references: [id])
+  replaces       RefreshToken? @relation("RefreshTokenRotation")
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([loginSessionId, revoked, expiresAt])
+  @@index([userId, revoked, expiresAt])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LoginSession {
+  id                  String         @id @default(cuid())
+  userId              String
+  ipAddress           String?
+  userAgent           String?
+  createdAt           DateTime       @default(now())
+  lastActive          DateTime?
+  updatedAt           DateTime       @updatedAt
+  sessionSelectorHash String?        @unique
+  expiresAt           DateTime?
+  revokedAt           DateTime?
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens       RefreshToken[]
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+}
+
+model PasswordHistory {
+  id           String   @id @default(cuid())
+  userId       String
+  passwordHash String
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SubscriptionPlan {
+  id              String           @id @default(cuid())
+  name            String
+  type            SubscriptionType
+  price           Decimal
+  billingCycle    String
+  maxUsers        Int?
+  description     String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  jobPostingLimit Int?
+  subscriptions   Subscription[]
+}
+
+model Subscription {
+  id                   String                @id @default(cuid())
+  planId               String
+  userId               String?
+  organizationId       String?
+  status               SubscriptionStatus    @default(TRIAL)
+  startDate            DateTime              @default(now())
+  expiryDate           DateTime?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  jobQuotaConsumptions JobQuotaConsumption[]
+  organization         Organization?         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan                 SubscriptionPlan      @relation(fields: [planId], references: [id])
+  user                 User?                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String
+  action      String
+  targetType  String
+  targetId    String
+  metadata    Json?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+  actor       User     @relation(fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  @@index([actorUserId])
+  @@index([targetType, targetId])
+}
+
+model StoredFile {
+  id                String                      @id @default(cuid())
+  ownerType         FileOwnerType
+  ownerId           String
+  category          FileCategory
+  originalName      String
+  storedName        String
+  mimeType          String
+  fileSize          Int
+  storagePath       String                      @unique
+  employeeProfileId String?
+  skillId           String?
+  certificateId     String?
+  projectId         String?
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+  jobCandidateList  JobCandidateList?
+  // Phase 7 — the job-scoped candidate reference that owns this file as its
+  // resume, when the file category is JOB_CANDIDATE_RESUME.
+  jobCandidateReference JobCandidateReference?
+  certificate       EmployeeProfileCertificate? @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+  employeeProfile   EmployeeProfile?            @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+  project           EmployeeProfileProject?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  skill             EmployeeProfileSkill?       @relation(fields: [skillId], references: [id])
+
+  @@index([ownerType, ownerId])
+  @@index([employeeProfileId])
+  @@index([skillId])
+  @@index([certificateId])
+  @@index([projectId])
+  @@index([category])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("INFO")
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, isRead])
+}
+
+model Job {
+  id                       String                     @id @default(cuid())
+  title                    String
+  description              String?
+  recruiterId              String?
+  organizationId           String?
+  // PHASE 1 (org admin permanent recruiter delete) — OPTIONAL + SetNull.
+  //
+  // Was `String` (NOT NULL) with `onDelete: Restrict`, which made a recruiter who
+  // had ever posted a job impossible to delete: PostgreSQL refused the User
+  // delete. That is the correct FK behaviour for a column declared required, but
+  // it conflicts with a genuinely permanent "delete recruiter" action, because
+  // the only way to satisfy it would have been to cascade-delete the jobs.
+  //
+  // Deleting the jobs was rejected on purpose: a job's candidates, assessment
+  // attempts, scores and AI candidate analyses are the ORGANIZATION's historical
+  // record (the Org Admin Job Analysis / Dashboard surfaces read exactly those
+  // rows). Destroying them because an account was deleted would destroy
+  // historical organization data.
+  //
+  // So the ownership link is now DETACHABLE: deleting the recruiter sets
+  // `createdByUserId` to NULL and keeps the job, its candidates, assessments,
+  // attempts and analyses exactly as they were. Read paths must therefore treat
+  // `createdByUser` as nullable and render an unattributed owner — see
+  // `DELETED_RECRUITER_LABEL` in organization.service.js. No replacement owner
+  // is ever fabricated.
+  createdByUserId          String?
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
+  analysisDays             Int?
+  analysisEndsAt           DateTime?
+  closedAt                 DateTime?
+  closedReason             JobClosedReason?
+  startedAt                DateTime?
+  yearsExperience          Int?
+  employmentType           JobEmploymentType?
+  workMode                 JobWorkMode?
+  location                 String?
+  status                   JobStatus                  @default(DRAFT)
+  preferredCandidateCount  Int?
+  assessmentQuestionCount  Int?
+  assessmentDurationSeconds Int?
+  clarificationsApprovedAt DateTime?
+  aiJobs                   AiJob[]
+  createdByUser            User?                      @relation("JobsCreatedByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  organization             Organization?              @relation("OrganizationJobs", fields: [organizationId], references: [id], onDelete: Restrict)
+  recruiter                User?                      @relation("JobsPostedByRecruiter", fields: [recruiterId], references: [id], onDelete: SetNull)
+  assessment               JobAssessment?
+  assessmentInvitations    JobAssessmentInvitation[]
+  assessmentAttempts       JobAssessmentAttempt[]
+  candidateList            JobCandidateList?
+  // Phase 7 — job-scoped recruiter-provided candidate references and their
+  // materialized analyses. Both cascade with the job (job-scoped by design:
+  // no candidate data is global).
+  candidateAnalyses        JobCandidateAnalysis[]
+  candidateReferences      JobCandidateReference[]
+  clarificationQuestions   JobClarificationQuestion[]
+  educationRequirements    JobEducationRequirement[]
+  questions                JobQuestion[]
+  quotaConsumption         JobQuotaConsumption?
+  responsibilities         JobResponsibility[]
+  skills                   JobSkill[]
+  tools                    JobTool[]
+
+  @@index([recruiterId, status, createdAt])
+  @@index([organizationId, status, createdAt])
+  @@index([createdByUserId, status, createdAt])
+  @@index([status])
+  // Pre-existing pg_trgm GIN index created by migration 20260930010000 (raw
+  // SQL). Declared here so Prisma's shadow-database diff recognizes it as part
+  // of the schema instead of an unmodeled object it would DROP from every new
+  // migration. `map` pins the existing database name so nothing is recreated.
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "Job_title_trgm_idx")
+}
+
+model JobSkill {
+  id        String @id @default(cuid())
+  jobId     String
+  name      String
+  weight    Int
+  sortOrder Int    @default(0)
+  job       Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, name])
+  @@index([jobId, sortOrder])
+}
+
+model JobTool {
+  id        String @id @default(cuid())
+  jobId     String
+  name      String
+  sortOrder Int    @default(0)
+  job       Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, name])
+  @@index([jobId, sortOrder])
+}
+
+model JobQuestion {
+  id        String @id @default(cuid())
+  jobId     String
+  question  String
+  sortOrder Int    @default(0)
+  job       Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, sortOrder])
+}
+
+// Phase 1 — structured job requirements: recruiter-entered key-responsibility
+// lines. Ordered child-row clone of the JobQuestion pattern (text + sortOrder,
+// cascade with the job, replace-on-update while DRAFT). Deliberately NO unique
+// constraint on (jobId, text): duplicates are legal input, exactly like
+// JobQuestion. The AI pipeline never references these rows by id — snapshots
+// carry their TEXT only.
+model JobResponsibility {
+  id        String @id @default(cuid())
+  jobId     String
+  text      String
+  sortOrder Int    @default(0)
+  job       Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, sortOrder])
+}
+
+// Phase 1 — structured job requirements: recruiter-entered education-requirement
+// lines. Same ordered child-row shape and rules as JobResponsibility/JobQuestion
+// (no unique on text, cascade delete, sortOrder derived from array order at save).
+model JobEducationRequirement {
+  id        String @id @default(cuid())
+  jobId     String
+  text      String
+  sortOrder Int    @default(0)
+  job       Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, sortOrder])
+}
+
+model JobQuotaConsumption {
+  id             String       @id @default(cuid())
+  jobId          String       @unique
+  subscriptionId String
+  consumedAt     DateTime     @default(now())
+  job            Job          @relation(fields: [jobId], references: [id])
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@index([subscriptionId, consumedAt])
+}
+
+model JobCandidateList {
+  id             String     @id @default(cuid())
+  jobId          String     @unique
+  fileId         String     @unique
+  candidateCount Int
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  file           StoredFile @relation(fields: [fileId], references: [id])
+  job            Job        @relation(fields: [jobId], references: [id])
+}
+
+model AiJob {
+  id                     String                     @id @default(cuid())
+  jobId                  String
+  operation              AiJobOperation
+  status                 AiJobStatus                @default(PENDING)
+  requestPayload         Json
+  result                 Json?
+  attempts               Int                        @default(0)
+  lastError              String?
+  provider               String?
+  startedAt              DateTime?
+  completedAt            DateTime?
+  workerId               String?
+  lastEnqueuedAt         DateTime?
+  // Phase 7 — the candidate-scope discriminator. "" for JOB_ANALYSIS and
+  // ASSESSMENT_GENERATION, which keeps their one-row-per-job contract exactly
+  // as before (existing rows backfill to "" via the column default). For
+  // CANDIDATE_ANALYSIS it carries the opaque candidate scope, so every
+  // candidate analysis is an independent, independently retryable AiJob.
+  scopeKey               String                     @default("")
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  job                    Job                        @relation(fields: [jobId], references: [id])
+  assessment             JobAssessment?
+  clarificationQuestions JobClarificationQuestion[]
+  // Phase 7 — the 1:1 materialized candidate analysis produced by this AiJob.
+  candidateAnalysis      JobCandidateAnalysis?
+
+  @@unique([jobId, operation, scopeKey])
+  @@index([status, updatedAt])
+  @@index([jobId])
+}
+
+model JobClarificationQuestion {
+  id        String             @id @default(cuid())
+  jobId     String
+  aiJobId   String
+  section   JobAnalysisSection
+  sortOrder Int
+  question  String
+  edited    Boolean            @default(false)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  aiJob     AiJob              @relation(fields: [aiJobId], references: [id])
+  job       Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, section, sortOrder])
+  @@index([jobId, sortOrder])
+  @@index([aiJobId])
+}
+
+model JobAssessment {
+  id              String                    @id @default(cuid())
+  jobId           String                    @unique
+  aiJobId         String?                   @unique
+  title           String
+  description     String?
+  status          JobAssessmentStatus       @default(DRAFT)
+  publicId        String?                   @unique
+  finalizedAt     DateTime?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  durationSeconds Int                       @default(600)
+  activatedAt     DateTime?
+  aiJob           AiJob?                    @relation(fields: [aiJobId], references: [id], onDelete: Restrict)
+  job             Job                       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  invitations     JobAssessmentInvitation[]
+  questions       JobAssessmentQuestion[]
+  attempts        JobAssessmentAttempt[]
+
+  @@index([status])
+}
+
+model JobAssessmentQuestion {
+  id           String                 @id @default(cuid())
+  assessmentId String
+  section      JobAnalysisSection
+  sortOrder    Int
+  prompt       String
+  questionType AssessmentQuestionType
+  points       Int
+  difficulty   AssessmentDifficulty?
+  guidance     String?
+  options      Json?
+  // Phase 6 — the TRUSTED server-side answer key for deterministic scoring.
+  // Shape by questionType: SINGLE_CHOICE {"choice": "<exact option text>"} or
+  // MULTIPLE_CHOICE {"choices": ["<exact option text>", ...]}; null for every
+  // text-shaped type (and for legacy rows predating Phase 6), which carry no
+  // deterministic key and are never auto-graded. Written ONLY by the generation
+  // persistence path after the strict worker/FastAPI contract validated it
+  // against this question's own options — never by a candidate submission, a
+  // recruiter edit (which cannot touch options or type), or any client input,
+  // and never included in a candidate-facing projection.
+  correctAnswer Json?
+  // Phase 1 — traceability key (e.g. "REQ_1", "REQ_2") linking this question to
+  // the job's normalized requirement set. Backend-generated only — never by the
+  // AI and never by the recruiter — plain string, deliberately NOT a foreign key:
+  // the canonical requirement set lives inside immutable AiJob.result, not a
+  // table. NULL on every legacy question and on every question generated before
+  // requirement extraction exists.
+  requirementKey String?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  assessment   JobAssessment          @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  attemptAnswers JobAssessmentAttemptAnswer[]
+
+  @@unique([assessmentId, sortOrder])
+  @@index([assessmentId, section])
+}
+
+model JobAssessmentInvitation {
+  id                    String                        @id @default(cuid())
+  jobId                 String
+  assessmentId          String
+  email                 String
+  status                JobAssessmentInvitationStatus @default(INVITED)
+  invitedAt             DateTime                      @default(now())
+  expiresAt             DateTime
+  emailVerifiedAt       DateTime?
+  // Recruiter-invitation email delivery claim. NULL means "no invitation email
+  // has been successfully claimed for this invitation yet". It is the durable,
+  // race-safe guard behind the duplicate-invitation rule: ONE job + assessment +
+  // normalized email may claim and send the invitation email exactly once, so a
+  // double click, a refresh, a network retry or two concurrent requests produce
+  // ONE invitation, ONE email and (for an IN_SYSTEM candidate) ONE notification.
+  //
+  // Deliberately NOT a "delivered" claim: it records that the send was CLAIMED
+  // and the provider accepted it, never that a human received it. A failed send
+  // RELEASES the claim so a genuine retry can still reach the candidate.
+  invitationEmailSentAt DateTime?
+  verificationTokenHash String?
+  verificationExpiresAt DateTime?
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
+  assessment            JobAssessment                 @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  job                   Job                           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  attempt               JobAssessmentAttempt?
+
+  @@unique([assessmentId, email])
+  @@index([jobId])
+  @@index([status, expiresAt])
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3 — the candidate's PERSISTENT assessment attempt.
+//
+// ONE invitation + ONE assessment = ONE attempt, enforced structurally:
+//   * @@unique([assessmentId, email])  → one attempt per candidate+assessment
+//   * invitationId @unique             → one attempt per invitation row
+//
+// The attempt is the server-authoritative timer: startedAt/deadlineAt are
+// written once by the backend (never by a client) and the deadline is
+// deadlineAt = startedAt + JobAssessment.durationSeconds. No in-memory timer
+// exists — expiry is enforced lazily against the persisted deadline, so a
+// process restart can neither lose nor reset it. The invitation remains the
+// pre-attempt authorization; SUBMITTED and TIMED_UP are terminal.
+// Phase 5 adds CHEATED as the DETERMINISTIC integrity-violation terminal state:
+// it is reached only by the server-side rule layer after a persisted threshold
+// is met (never by a browser claiming it). CANCELLED is still deliberately not
+// modelled (a later phase, if ever). SUBMITTED, TIMED_UP and CHEATED are all
+// terminal and are never reopened.
+// ---------------------------------------------------------------------------
+enum JobAssessmentAttemptStatus {
+  STARTED
+  IN_PROGRESS
+  SUBMITTED
+  TIMED_UP
+  CHEATED
+}
+
+// Phase 5 — the persisted integrity signals a terminal CHEATED decision can be
+// derived from. Deliberately enumerated (never free-form strings) so a decision
+// can only ever cite a rule the server actually implements.
+enum JobAssessmentAttemptIntegrityEventType {
+  VISIBILITY_HIDDEN
+  VISIBILITY_VISIBLE
+  EXCESSIVE_VISIBILITY_CHANGES
+  DUPLICATE_ATTEMPT
+  TIMER_INTEGRITY_VIOLATION
+  PROHIBITED_CLIENT_ACTION
+  SERVER_INTEGRITY_VIOLATION
+}
+
+model JobAssessmentAttempt {
+  id             String                     @id @default(cuid())
+  jobId          String
+  assessmentId   String
+  invitationId   String                     @unique
+  email          String
+  status         JobAssessmentAttemptStatus @default(STARTED)
+  startedAt      DateTime                   @default(now())
+  deadlineAt     DateTime
+  submittedAt    DateTime?
+  timedOutAt     DateTime?
+  // Phase 5 — set only by markAttemptCheated (deterministic rule layer). A
+  // concise enum-like reason label, never free-form prose and never AI text.
+  cheatedAt      DateTime?
+  cheatReason    String?
+  lastActivityAt DateTime?
+  // Phase 6 — the DETERMINISTIC server-side assessment score, written exactly
+  // once inside the SAME transaction that moves the attempt ACTIVE → SUBMITTED
+  // (jobAssessmentAttempt.repository#submitAndScoreTransactional). Computed
+  // only from persisted JobAssessmentQuestion.points/correctAnswer and the
+  // persisted JobAssessmentAttemptAnswer rows — never from any client input.
+  //   score           = earned points (exact-match choice grading only)
+  //   maxScore        = total points of the assessment's persisted questions
+  //   scorePercentage = score / maxScore * 100 (2 decimals; 0 when maxScore = 0)
+  // NULL until a successful SUBMITTED transition: pre-submission, TIMED_UP and
+  // CHEATED attempts never carry a score. Completely separate from the
+  // platform's Verified Skill Score (VerificationAttempt/VerificationReport).
+  score            Int?
+  maxScore         Int?
+  scorePercentage  Decimal?
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  assessment     JobAssessment              @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  invitation     JobAssessmentInvitation    @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  job            Job                        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  answers        JobAssessmentAttemptAnswer[]
+  // Phase 5 — the persisted integrity signal log for this attempt.
+  integrityEvents JobAssessmentAttemptIntegrityEvent[]
+  // Phase 7 — candidate analyses that snapshotted this attempt. SetNull on
+  // delete: the analysis is the audit record; the attempt link is lineage.
+  candidateAnalyses JobCandidateAnalysis[]
+
+  @@unique([assessmentId, email])
+  @@index([assessmentId, status])
+  @@index([jobId, status])
+}
+
+// Phase 5 — assessment integrity / cheating detection.
+//
+// One row per PERSISTED deterministic integrity signal for an attempt. The
+// browser reports a signal (a visibility transition) but never decides the
+// outcome: the row is written server-side and the rule layer
+// (jobAssessmentIntegrity.service.js) decides whether the documented threshold
+// has been reached. Nothing here lives in Node memory, so the integrity history
+// survives a browser refresh, an Express restart, a worker restart and any
+// number of Express instances.
+//
+// `metadata` carries only bounded, non-sensitive context (for example the
+// visibility state and the persisted hidden count at decision time) — never
+// answers, tokens, hashes or candidate profile data.
+model JobAssessmentAttemptIntegrityEvent {
+  id         String                                  @id @default(cuid())
+  attemptId  String
+  type       JobAssessmentAttemptIntegrityEventType
+  reason     String
+  metadata   Json                                    @default("{}")
+  occurredAt DateTime                                @default(now())
+  createdAt  DateTime                                @default(now())
+  attempt    JobAssessmentAttempt                    @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@index([attemptId, occurredAt])
+  @@index([attemptId, type])
+  @@index([type])
+}
+
+// One persisted answer per (attempt, question). The question FK is verified to
+// belong to the attempt's assessment on every write, so an answer can never
+// cross assessment boundaries. `answer` is Json because the existing question
+// types carry different shapes (choice / choices / text) — the SHAPE is
+// validated per question type in the service before anything is written.
+model JobAssessmentAttemptAnswer {
+  id         String   @id @default(cuid())
+  attemptId  String
+  questionId String
+  answer     Json?
+  answeredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  attempt    JobAssessmentAttempt   @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question   JobAssessmentQuestion  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+  @@index([questionId])
+}
+
+// ---------------------------------------------------------------------------
+// Phase 7 — recruiter-provided candidate references, SCOPED TO ONE JOB.
+//
+// The same candidate email may appear in many jobs with completely different
+// recruiter-provided data; every row here belongs to exactly one job
+// (@@unique([jobId, candidateEmail])) and one job's references can never be
+// read through another job. The Excel sheet may SEED a row (only when none
+// exists — candidate-list uploads never overwrite recruiter edits), and the
+// recruiter remains the authority over every field afterwards.
+//
+// Stored here: structured reference fields, the extracted plain text of an
+// uploaded resume (PDF/TXT, extracted via the existing pdf-parse path), and a
+// link to the original StoredFile (category JOB_CANDIDATE_RESUME). Raw email
+// stays internal to PostgreSQL/business logic — the AI payload uses the opaque
+// JobCandidateReference.id (candidateKey) instead.
+// ---------------------------------------------------------------------------
+model JobCandidateReference {
+  id              String    @id @default(cuid())
+  jobId           String
+  candidateEmail  String
+  candidateName   String?
+  linkedinUrl     String?
+  linkedinText    String?
+  githubUrl       String?
+  githubText      String?
+  preferredRole   String?
+  skills          Json?
+  skillNotes      String?
+  // The original uploaded resume (PDF/TXT). @unique: one StoredFile can back at
+  // most one reference; SetNull keeps the reference alive if the file row is
+  // removed (the service removes the disk content explicitly, like the
+  // candidate-list flow does).
+  resumeFileId    String?   @unique
+  // Extracted (or pasted) plain text. Null when nothing usable could be
+  // extracted (e.g. a scanned/image-only PDF) — the analysis then reports the
+  // resume source as NOT_PROVIDED instead of failing.
+  resumeText      String?
+  createdByUserId String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  analyses        JobCandidateAnalysis[]
+  job             Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  resume          StoredFile? @relation(fields: [resumeFileId], references: [id], onDelete: SetNull)
+
+  @@unique([jobId, candidateEmail])
+  @@index([jobId])
+}
+
+// ---------------------------------------------------------------------------
+// Phase 7 — one materialized candidate-analysis result per (job, candidate,
+// analysisVersion). The linked AiJob (operation CANDIDATE_ANALYSIS, scopeKey =
+// the opaque candidate scope) is the pipeline record AND the single source of
+// truth for STATUS: nothing is duplicated here except the validated result and
+// its provenance. Re-running after a reference edit writes the NEXT version;
+// earlier versions stay auditable and are never rewritten.
+//
+// candidateEmail stays internal (PostgreSQL/business logic); the payload sent
+// to FastAPI/AI uses candidateKey (the reference id at snapshot time) or
+// another opaque identifier — never the raw email.
+// ---------------------------------------------------------------------------
+model JobCandidateAnalysis {
+  id              String   @id @default(cuid())
+  jobId           String
+  aiJobId         String   @unique
+  candidateEmail  String
+  candidateName   String?
+  analysisVersion Int      @default(1)
+  candidateKey    String?
+  referenceId     String?
+  attemptId       String?
+  snapshotHash    String?
+  schemaVersion   String?
+  result          Json?
+  provider        String?
+  model           String?
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  aiJob           AiJob                  @relation(fields: [aiJobId], references: [id], onDelete: Restrict)
+  attempt         JobAssessmentAttempt?  @relation(fields: [attemptId], references: [id], onDelete: SetNull)
+  job             Job                    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  reference       JobCandidateReference? @relation(fields: [referenceId], references: [id], onDelete: SetNull)
+
+  @@unique([jobId, candidateEmail, analysisVersion])
+  @@index([attemptId])
+  @@index([referenceId])
+}
+
+enum MembershipStatus {
+  INVITED
+  ACTIVE
+  REMOVED
+}
+
+enum JobAssessmentInvitationStatus {
+  INVITED
+  EMAIL_VERIFIED
+}
+
+enum AvailabilityStatus {
+  ACTIVELY_LOOKING
+  OPEN_TO_OPPORTUNITIES
+  EMPLOYED_NOT_LOOKING
+  FREELANCE_AVAILABLE
+}
+
+enum UserStatus {
+  PENDING_EMAIL_VERIFICATION
+  PENDING_PROFILE
+  PENDING_SUBSCRIPTION
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum RoleName {
+  EMPLOYEE
+  RECRUITER
+  ORG_ADMIN
+  SUPER_ADMIN
+}
+
+enum ExperienceLevel {
+  ENTRY_LEVEL
+  MID_LEVEL
+  SENIOR_LEVEL
+  LEAD
+  EXECUTIVE
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  GITHUB
+  LINKEDIN
+}
+
+enum OrganizationStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+}
+
+enum SubscriptionType {
+  RECRUITER
+  ORGANIZATION
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  SUSPENDED
+}
+
+enum SkillProficiency {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum FileOwnerType {
+  EMPLOYEE
+  RECRUITER
+  ORGANIZATION
+}
+
+enum FileCategory {
+  PROFILE_IMAGE
+  SKILL_EVIDENCE
+  OTHER_CERTIFICATE
+  PROJECT_FILE
+  RECRUITER_VERIFICATION
+  RECRUITER_DOCUMENT
+  ORGANIZATION_VERIFICATION
+  ORGANIZATION_DOCUMENT
+  OTHER
+  JOB_CANDIDATE_LIST
+  // Phase 7 — the recruiter-uploaded candidate resume (PDF/TXT only; enforced
+  // by the resume route, not by these generic storage rules).
+  JOB_CANDIDATE_RESUME
+}
+
+enum AssessmentDefinitionStatus {
+  DRAFT
+  PUBLISHED
+  RETIRED
+}
+
+enum AssessmentQuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  SCENARIO
+  PROBLEM_SOLVING
+  SHORT_ANSWER
+  CODING
+  LIVE_CODING
+  PRACTICAL
+}
+
+enum AssessmentDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum VerificationAttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EXPIRED
+  CANCELLED
+  SCORED
+  VIOLATION_TERMINATED
+}
+
+enum EvaluationStatus {
+  PENDING
+  NOT_REQUIRED
+  EVALUATED
+  FAILED
+}
+
+enum VerificationProcessingStatus {
+  NOT_STARTED
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum VerificationStatus {
+  PENDING
+  INSUFFICIENT_EVIDENCE
+  PARTIALLY_VERIFIED
+  VERIFIED
+  HIGHLY_VERIFIED
+}
+
+enum VerificationEvidenceType {
+  EMPLOYEE_SKILL
+  PROJECT
+  PROJECT_SKILL
+  CERTIFICATE
+  SKILL_EVIDENCE_FILE
+  CERTIFICATE_FILE
+  PROJECT_FILE
+  RESUME
+  GITHUB
+  LINKEDIN
+}
+
+enum CareerMappingStatus {
+  MATCHED
+  UNMAPPED
+  NEEDS_REVIEW
+}
+
+enum JobStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+enum JobClosedReason {
+  SYSTEM_EXPIRED
+  RECRUITER_CLOSED
+}
+
+// Phase 1 — structured job requirements: how the job engages the candidate.
+// Nullable on Job with no default — legacy rows and drafts may leave it unset.
+enum JobEmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  TEMPORARY
+}
+
+// Phase 1 — structured job requirements: where the work happens. NULL means
+// unspecified; Job.location carries the place when the mode is ON_SITE/HYBRID.
+enum JobWorkMode {
+  REMOTE
+  HYBRID
+  ON_SITE
+}
+
+enum AiJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AiJobOperation {
+  JOB_ANALYSIS
+  ASSESSMENT_GENERATION
+  // Phase 7 — one AiJob per candidate analysis. Combined with the jobId +
+  // scopeKey columns, this lets a single job carry N independent candidate
+  // analyses without changing the one-row-per-job contract of the two
+  // original operations (whose scopeKey is always "").
+  CANDIDATE_ANALYSIS
+}
+
+enum JobAnalysisSection {
+  JOB_OVERVIEW
+  RESPONSIBILITIES
+  REQUIRED_SKILLS
+  TOOLS_SOFTWARE
+}
+
+enum JobAssessmentStatus {
+  DRAFT
+  FINALIZED
+}
